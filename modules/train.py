@@ -15,8 +15,8 @@ HIDDEN_UNITS = 10
 LEARNING_RATE = 0.001
 
 # Setup directories
-train_dir = "data/fcg-ff-vf-vv/train"
-test_dir = "data/fcg-ff-vf-vv/test"
+train_dir = "data/fcg-ff-vf-vv/train_test_split_20/train"
+test_dir = "data/fcg-ff-vf-vv/train_test_split_20/test"
 
 # Setup target device
 device = "cuda" if torch.cuda.is_available() else "cpu"
