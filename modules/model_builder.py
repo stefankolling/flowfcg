@@ -3,6 +3,7 @@ Contains PyTorch model code to instantiate various CNN models
 """
 import torch
 from torch import nn
+import torchvision
 
 class TinyVGG(nn.Module):
   """Creates the TinyVGG architecture.
