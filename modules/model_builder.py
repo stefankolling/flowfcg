@@ -1,5 +1,5 @@
 """
-Contains PyTorch model code to instantiate a TinyVGG model.
+Contains PyTorch model code to instantiate various CNN models
 """
 import torch
 from torch import nn
@@ -49,3 +49,77 @@ class TinyVGG(nn.Module):
 
   def forward(self, x: torch.Tensor):
       return self.classifier(self.conv_block_2(self.conv_block_1(x))) # <- leverage the benefits of operator fusion
+
+
+class FcgCnn(nn.Module):
+  """Creates the FCG-CNN architecture.
+
+  Replicates the FCG-CNN architecture from the Udemy course by Kyrill Emerenko.
+  Args:
+    input_shape: An integer indicating number of input channels.
+    hidden_units: An integer indicating number of hidden units between layers.
+    output_shape: An integer indicating number of output units.
+  """
+  def __init__(self, input_shape: int, hidden_units: int, output_shape: int) -> None:
+      super().__init__() # immediately call __init__() of super class
+      self.conv_block_1 = nn.Sequential(
+          nn.Conv2d(in_channels=input_shape,
+                    out_channels=hidden_units,
+                    kernel_size=3,
+                    stride=1,
+                    padding=0),
+          nn.ReLU(),
+          nn.MaxPool2d(kernel_size=2,
+                        stride=2),          
+          nn.Conv2d(in_channels=hidden_units,
+                    out_channels=hidden_units,
+                    kernel_size=3,
+                    stride=1,
+                    padding=0),
+          nn.ReLU(),
+          nn.MaxPool2d(kernel_size=2,
+                        stride=2)
+      )
+      
+      self.classifier = nn.Sequential(
+          nn.Flatten(),
+          nn.LazyLinear(out_features=128),
+          nn.ReLU(),
+          nn.Linear(in_features=128,
+                    out_features=output_shape)
+      )
+
+  def forward(self, x: torch.Tensor):
+      return self.classifier(self.conv_block_1(x)) # <- leverage the benefits of operator fusion
+
+class PretrainedCNN():
+  weights = None
+  model = None
+
+  def __init__(self, model: str, output_shape: int):
+    
+    match model:
+      case "vgg16":
+        self.weights =  torchvision.models.VGG16_Weights.DEFAULT #torchvision.models.EfficientNet_B0_Weights.DEFAULT # .DEFAULT = best available weights from pretraining on ImageNet
+        self.model = torchvision.models.vgg16(weights=self.weights).to(device)
+        #in_features = 25088 # should not be needed anymore with LazyLinear()
+      case "efficientnet_b0":
+        self.weights =  torchvision.models.EfficientNet_B0_Weights.DEFAULT # .DEFAULT = best available weights from pretraining on ImageNet
+        self.model = torchvision.models.efficientnet_b0(weights=self.weights).to(device)
+        #in_features = 1280
+      case "mobilenet_v2":
+        self.weights = torchvision.models.MobileNet_V2_Weights.DEFAULT
+        self.model = torchvision.models.mobilenet_v2(weights=self.weights).to(device)
+      case _:
+        print("[Info] No corresponding model found, returning empty model and transforms.")        
+      
+     # Freezing all layers (so that these parameters will not be trained anymore)
+    for param in model.features.parameters():
+      param.requires_grad = False
+
+    # Recreate the same classifier layer with 3 output classes (this will be trainable) for all models above and set it to the target device
+    self.model.classifier = torch.nn.Sequential(
+        torch.nn.Dropout(p=0.2, inplace=True), 
+        torch.nn.LazyLinear(out_features=output_shape, # same number of output units as our number of classes
+                        bias=True)).to(device)
+    
