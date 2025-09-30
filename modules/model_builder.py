@@ -43,14 +43,11 @@ class TinyVGG(nn.Module):
       )
       self.classifier = nn.Sequential(
           nn.Flatten(),
-          # Where did this in_features shape come from?
-          # It's because each layer of our network compresses and changes the shape of our inputs data.
           nn.LazyLinear(out_features=output_shape) # nn.LazyLinear() automatically infers in_features from input shape of the tensor coming from the previous layer; other than that identical to nn.Linear()
       )
 
   def forward(self, x: torch.Tensor):
       return self.classifier(self.conv_block_2(self.conv_block_1(x))) # <- leverage the benefits of operator fusion
-
 
 class FcgCnn(nn.Module):
   """Creates the FCG-CNN architecture.
@@ -102,25 +99,22 @@ class PretrainedCNN():
     match model:
       case "vgg16":
         self.weights =  torchvision.models.VGG16_Weights.DEFAULT #torchvision.models.EfficientNet_B0_Weights.DEFAULT # .DEFAULT = best available weights from pretraining on ImageNet
-        self.model = torchvision.models.vgg16(weights=self.weights).to(device)
-        #in_features = 25088 # should not be needed anymore with LazyLinear()
+        self.model = torchvision.models.vgg16(weights=self.weights)
       case "efficientnet_b0":
         self.weights =  torchvision.models.EfficientNet_B0_Weights.DEFAULT # .DEFAULT = best available weights from pretraining on ImageNet
-        self.model = torchvision.models.efficientnet_b0(weights=self.weights).to(device)
-        #in_features = 1280
+        self.model = torchvision.models.efficientnet_b0(weights=self.weights)
       case "mobilenet_v2":
         self.weights = torchvision.models.MobileNet_V2_Weights.DEFAULT
-        self.model = torchvision.models.mobilenet_v2(weights=self.weights).to(device)
+        self.model = torchvision.models.mobilenet_v2(weights=self.weights)
       case _:
-        print("[Info] No corresponding model found, returning empty model and transforms.")        
+        print("[Info] No corresponding model found.")        
       
-     # Freezing all layers (so that these parameters will not be trained anymore)
-    for param in model.features.parameters():
+    # Freezing all layers (so that these parameters will not be trained anymore)
+    for param in self.model.features.parameters():
       param.requires_grad = False
 
     # Recreate the same classifier layer with 3 output classes (this will be trainable) for all models above and set it to the target device
-    self.model.classifier = torch.nn.Sequential(
-        torch.nn.Dropout(p=0.2, inplace=True), 
-        torch.nn.LazyLinear(out_features=output_shape, # same number of output units as our number of classes
-                        bias=True)).to(device)
-    
+    self.model.classifier = nn.Sequential(
+        nn.Dropout(p=0.2, inplace=True), 
+        nn.LazyLinear(out_features=output_shape, # same number of output units as our number of classes
+                        bias=True))
