@@ -1,5 +1,5 @@
 """
-Contains functionality for creating PyTorch DataLoaders for 
+Contains functionality for creating PyTorch DataLoaders for
 image classification data.
 """
 
@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 NUM_WORKERS = os.cpu_count()
 DATA_PATH = "data"
 DATASET_NAME = "fcg-ff-vf-vv"
-EXTERNAL_DATASET_URL = "https://github.com/stefankolling/flowfcg/raw/refs/heads/main/data/fcg-ff-vf-vv.zip"
+EXTERNAL_DATASET_URL = "https://github.com/stefankolling/flowfcg/raw/refs/heads/main/data/fcg-ff-vf-vv.zip" # this code was written before we decided to clone th whole repository into the local workspace; now we could simply unzip the dataset already present locally
 
 def load_data(dataset_name: str=DATASET_NAME,
               external_source: str=EXTERNAL_DATASET_URL,
@@ -32,7 +32,7 @@ def load_data(dataset_name: str=DATASET_NAME,
     dataset_name: String literal to be used as name of dataset to be loaded
     external_source: URL to an external source with dataset as zip file (e.g. GitHub link)
     data_path: String literal to be used as local path for the dataset
-   
+
   Returns:
     dataset_path: pathlib.Path object to dataset path
   """
@@ -41,32 +41,32 @@ def load_data(dataset_name: str=DATASET_NAME,
   data_path = Path(data_path + "/")
   dataset_path = data_path / dataset_name
 
-  # If the dataset folder doesn't exist, download it and prepare it... 
+  # If the dataset folder doesn't exist, download it and prepare it...
   if dataset_path.is_dir():
       print(f"{dataset_path} directory already exists.")
   else:
       print(f"Did not find {dataset_path} directory, creating one...", end="")
       dataset_path.mkdir(parents=True, exist_ok=True)
       print("done")
-      
+
   # Download data
   with open(data_path / (dataset_name + ".zip"), "wb") as f:
       request = requests.get(external_source)
       print("Downloading dataset from external source...", end="")
       f.write(request.content)
-      print("done") 
+      print("done")
 
   # Unzip external dataset
   with zipfile.ZipFile(data_path / (dataset_name + ".zip"), "r") as zip_ref:
-      print("Unzipping dataset...", end="") 
+      print("Unzipping dataset...", end="")
       zip_ref.extractall(dataset_path)
-      print("done") 
+      print("done")
 
   # Cleaning up by removing zip file
-  print("Cleaning up temporary zip file...", end="") 
+  print("Cleaning up temporary zip file...", end="")
   os.remove(data_path / (dataset_name + ".zip"))
   print("done")
-  print(f"Dataset {dataset_name} can now be found at '{str(dataset_path)}.'") 
+  print(f"Dataset {dataset_name} can now be found at '{str(dataset_path)}.'")
 
   return dataset_path
 
@@ -76,12 +76,12 @@ def train_test_split(dataset_path: pathlib.Path,
   """Splits dataset into train and test set according to given ratio
 
   Takes in a dataset path and a train or test ratio and splits the dataset into train and test set.
-  
+
   Args:
     dataset_path: pathlib.Path object
     train_ratio: float in the range of 0.0 to 1.0
     test_ratio: float in the range of 0.0 to 1.0
-   
+
   Returns:
     train_dir: pathlib.Path object to train dir
     test_dir: pathlib.Path object to test dir
@@ -94,10 +94,10 @@ def train_test_split(dataset_path: pathlib.Path,
   return train_dir, test_dir
 
 def create_dataloaders(
-    train_dir: str, 
-    test_dir: str, 
-    transform: transforms.Compose, 
-    batch_size: int, 
+    train_dir: str,
+    test_dir: str,
+    transform: transforms.Compose,
+    batch_size: int,
     num_workers: int=NUM_WORKERS
 ):
   """Creates training and testing DataLoaders.

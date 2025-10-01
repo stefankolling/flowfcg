@@ -4,6 +4,9 @@ Contains PyTorch model code to instantiate various CNN models
 import torch
 from torch import nn
 import torchvision
+from torchvision import transforms
+
+RESIZE_DIM = (64,64)
 
 class TinyVGG(nn.Module):
   """Creates the TinyVGG architecture.
@@ -49,6 +52,14 @@ class TinyVGG(nn.Module):
   def forward(self, x: torch.Tensor):
       return self.classifier(self.conv_block_2(self.conv_block_1(x))) # <- leverage the benefits of operator fusion
 
+  def transforms(self):
+	  # Create manual transforms
+	  manual_transforms = transforms.Compose([
+	    transforms.Resize(RESIZE_DIM),
+	    transforms.ToTensor()  # this also automatically normalises RGB values from range 0..255 to 0..1
+	  ])
+	  return manual_transforms
+
 class FcgCnn(nn.Module):
   """Creates the FCG-CNN architecture.
 
@@ -68,7 +79,7 @@ class FcgCnn(nn.Module):
                     padding=0),
           nn.ReLU(),
           nn.MaxPool2d(kernel_size=2,
-                        stride=2),          
+                        stride=2),
           nn.Conv2d(in_channels=hidden_units,
                     out_channels=hidden_units,
                     kernel_size=3,
@@ -78,7 +89,7 @@ class FcgCnn(nn.Module):
           nn.MaxPool2d(kernel_size=2,
                         stride=2)
       )
-      
+
       self.classifier = nn.Sequential(
           nn.Flatten(),
           nn.LazyLinear(out_features=128),
@@ -90,12 +101,20 @@ class FcgCnn(nn.Module):
   def forward(self, x: torch.Tensor):
       return self.classifier(self.conv_block_1(x)) # <- leverage the benefits of operator fusion
 
+  def transforms(self):
+	  # Create manual transforms
+	  manual_transforms = transforms.Compose([
+	    transforms.Resize(RESIZE_DIM),
+	    transforms.ToTensor()  # this also automatically normalises RGB values from range 0..255 to 0..1
+	  ])
+	  return manual_transforms
+
 class PretrainedCNN():
   weights = None
   model = None
 
   def __init__(self, model: str, output_shape: int):
-    
+
     match model:
       case "vgg16":
         self.weights =  torchvision.models.VGG16_Weights.DEFAULT #torchvision.models.EfficientNet_B0_Weights.DEFAULT # .DEFAULT = best available weights from pretraining on ImageNet
@@ -107,14 +126,17 @@ class PretrainedCNN():
         self.weights = torchvision.models.MobileNet_V2_Weights.DEFAULT
         self.model = torchvision.models.mobilenet_v2(weights=self.weights)
       case _:
-        print("[Info] No corresponding model found.")        
-      
+        print("[Info] No corresponding model found.")
+
     # Freezing all layers (so that these parameters will not be trained anymore)
     for param in self.model.features.parameters():
       param.requires_grad = False
 
     # Recreate the same classifier layer with 3 output classes (this will be trainable) for all models above and set it to the target device
     self.model.classifier = nn.Sequential(
-        nn.Dropout(p=0.2, inplace=True), 
+        nn.Dropout(p=0.2, inplace=True),
         nn.LazyLinear(out_features=output_shape, # same number of output units as our number of classes
                         bias=True))
+
+  def transforms(self):
+	  return self.weights.transforms()
