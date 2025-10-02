@@ -53,12 +53,12 @@ class TinyVGG(nn.Module):
       return self.classifier(self.conv_block_2(self.conv_block_1(x))) # <- leverage the benefits of operator fusion
 
   def transforms(self):
-	  # Create manual transforms
-	  manual_transforms = transforms.Compose([
-	    transforms.Resize(RESIZE_DIM),
-	    transforms.ToTensor()  # this also automatically normalises RGB values from range 0..255 to 0..1
-	  ])
-	  return manual_transforms
+      # Create manual transforms
+      manual_transforms = transforms.Compose([
+        transforms.Resize(RESIZE_DIM),
+        transforms.ToTensor()  # this also automatically normalises RGB values from range 0..255 to 0..1
+      ])
+      return manual_transforms
 
 class FcgCnn(nn.Module):
   """Creates the FCG-CNN architecture.
@@ -107,7 +107,7 @@ class FcgCnn(nn.Module):
         transforms.Resize(RESIZE_DIM),
         transforms.ToTensor()  # this also automatically normalises RGB values from range 0..255 to 0..1
       ])
-    
+
       return manual_transforms
 
 class PretrainedCNN():

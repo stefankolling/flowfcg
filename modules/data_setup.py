@@ -74,17 +74,21 @@ class MyDataset(Dataset):
   """MyDataset extends torch.utils.data.Dataset to allow applying transforms to a subset after the dataset
      has already been created. For example, this is useful if you first want to create a complete dataset without applying transforms,
      then split it into train and test (sub-)datasets and eventually apply different transforms to the subset
-  """ 
+  """
   def __init__(self, subset, transform=None):
-      self.subset = subset
+      super().__init__()
+      self.subset = subset      
       self.transform = transform
-      
+      self.imgs = None
+      if isinstance(self.subset, datasets.ImageFolder):
+        self.imgs = self.subset.imgs
+
   def __getitem__(self, index):
       x, y = self.subset[index]
       if self.transform:  # If a transform is set, it will be applied to the element before returning it
           x = self.transform(x)
       return x, y
-      
+
   def __len__(self):
       return len(self.subset)
 
@@ -151,7 +155,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
   )
 
   return train_dataloader, test_dataloader, class_names
-  
+
 def create_dataloaders_from_directory(
     train_dir: str,
     test_dir: str,
