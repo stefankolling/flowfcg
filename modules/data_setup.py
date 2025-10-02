@@ -101,7 +101,8 @@ def train_test_split_create_dataloaders(dataset_path: str,
   Args:
     dataset_path: pathlib.Path object
     train_ratio: float in the range of 0.0 to 1.0
-    transform: torchvision transforms to perform on training and testing data.
+    train_transform: torchvision transforms to perform on testing data.
+    test_transform: torchvision transforms to perform on testing data.
     batch_size: Number of samples per batch in each of the DataLoaders.
     num_workers: An integer for number of workers per DataLoader.
 
@@ -155,6 +156,7 @@ def create_dataloaders_from_directory(
     train_dir: str,
     test_dir: str,
     train_transform: transforms.Compose,
+    test_transform: transforms.Compose,
     batch_size: int,
     num_workers: int=NUM_WORKERS
 ):
