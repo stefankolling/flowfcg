@@ -79,9 +79,6 @@ class MyDataset(Dataset):
       super().__init__()
       self.subset = subset      
       self.transform = transform
-      self.imgs = None
-      if isinstance(self.subset, datasets.ImageFolder):
-        self.imgs = self.subset.imgs
 
   def __getitem__(self, index):
       x, y = self.subset[index]
