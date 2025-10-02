@@ -122,7 +122,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
   dataset = datasets.ImageFolder(dataset_path)
 
   # Get class names
-  class_names = train_data.classes
+  class_names = dataset.classes
 
   # Split dataset
   assert train_ratio > 0.0 and train_ratio < 1.0, print(f"The train ratio must be in the range from 0.0 to 1.0, but was {train_ratio} instead.")
