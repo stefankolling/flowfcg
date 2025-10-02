@@ -131,6 +131,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
   train_size = int(train_ratio * dataset_size)
   test_size = dataset_size - train_size
   train_data, test_data = random_split(dataset, [train_size, test_size])
+  print(f"train ratio: {train_ratio}, dataset: {dataset_size}, train_data: {train_size}, test_data: {test_size}")
 
   # Apply different transforms to each subdataset
   train_data, test_data = MyDataset(train_data, transform=train_transform), MyDataset(test_data, transform=test_transform)
