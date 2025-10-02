@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Tuple
 
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset, random_split
 
 NUM_WORKERS = os.cpu_count()
 DATA_PATH = "data"
@@ -70,9 +70,30 @@ def load_data(dataset_name: str=DATASET_NAME,
 
   return dataset_path
 
-def train_test_split(dataset_path: pathlib.Path,
-                       train_ratio: float,
-                       test_ratio: float):
+class MyDataset(Dataset):
+  """MyDataset extends torch.utils.data.Dataset to allow applying transforms to a subset after the dataset
+     has already been created. For example, this is useful if you first want to create a complete dataset without applying transforms,
+     then split it into train and test (sub-)datasets and eventually apply different transforms to the subset
+  """ 
+  def __init__(self, subset, transform=None):
+      self.subset = subset
+      self.transform = transform
+      
+  def __getitem__(self, index):
+      x, y = self.subset[index]
+      if self.transform:  # If a transform is set, it will be applied to the element before returning it
+          x = self.transform(x)
+      return x, y
+      
+  def __len__(self):
+      return len(self.subset)
+
+def train_test_split_create_dataloaders(dataset_path: str,
+                     train_ratio: float,
+                     train_transform: transforms.Compose,
+                     test_transform: transforms.Compose,
+                     batch_size: int,
+                     num_workers: int=NUM_WORKERS):
   """Splits dataset into train and test set according to given ratio
 
   Takes in a dataset path and a train or test ratio and splits the dataset into train and test set.
@@ -80,23 +101,60 @@ def train_test_split(dataset_path: pathlib.Path,
   Args:
     dataset_path: pathlib.Path object
     train_ratio: float in the range of 0.0 to 1.0
-    test_ratio: float in the range of 0.0 to 1.0
+    transform: torchvision transforms to perform on training and testing data.
+    batch_size: Number of samples per batch in each of the DataLoaders.
+    num_workers: An integer for number of workers per DataLoader.
 
   Returns:
-    train_dir: pathlib.Path object to train dir
-    test_dir: pathlib.Path object to test dir
+    A tuple of (train_dataloader, test_dataloader, class_names).
+    Where class_names is a list of the target classes.
+    Example usage:
+      train_dataloader, test_dataloader, class_names = \
+        = train_test_split_create_dataloaders(dataset_path=path/to/dir,
+                             train_transform=some_transform,
+                             test_transform=some_transform,
+                             batch_size=32,
+                             num_workers=4)
   """
 
-  # ToDo: Implement function
-  train_dir = Path("")
-  test_dir = Path("")
+  # Use ImageFolder to create the dataset
+  dataset = datasets.ImageFolder(dataset_path)
 
-  return train_dir, test_dir
+  # Get class names
+  class_names = train_data.classes
 
-def create_dataloaders(
+  # Split dataset
+  assert train_ratio > 0.0 and train_ratio < 1.0, print(f"The train ratio must be in the range from 0.0 to 1.0, but was {train_ratio} instead.")
+  dataset_size = len(dataset)
+  train_size = int(train_ratio * dataset_size)
+  test_size = dataset_size - train_size
+  train_data, test_data = random_split(dataset, [train_size, test_size])
+
+  # Apply different transforms to each subdataset
+  train_data, test_data = MyDataset(train_data, transform=train_transform), MyDataset(test_data, transform=test_transform)
+
+  # Turn images into data loaders
+  train_dataloader = create_dataloaders_from_dataset(
+      dataset=train_data,
+      batch_size=batch_size,
+      shuffle=True,
+      num_workers=num_workers
+      pin_memory=True,
+  )
+  test_dataloader = DataLoader(
+      dataset=train_data,
+      batch_size=batch_size,
+      shuffle=False, # No need to shuffle test data
+      num_workers=num_workers,
+      pin_memory=True
+  )
+
+  return train_dataloader, test_dataloader, class_names
+  
+def create_dataloaders_from_directories(
     train_dir: str,
     test_dir: str,
-    transform: transforms.Compose,
+    train_transform: transforms.Compose,
     batch_size: int,
     num_workers: int=NUM_WORKERS
 ):
@@ -108,7 +166,8 @@ def create_dataloaders(
   Args:
     train_dir: Path to training directory.
     test_dir: Path to testing directory.
-    transform: torchvision transforms to perform on training and testing data.
+    train_transform: torchvision transforms to perform on testing data.
+    test_transform: torchvision transforms to perform on testing data.
     batch_size: Number of samples per batch in each of the DataLoaders.
     num_workers: An integer for number of workers per DataLoader.
 
@@ -119,13 +178,14 @@ def create_dataloaders(
       train_dataloader, test_dataloader, class_names = \
         = create_dataloaders(train_dir=path/to/train_dir,
                              test_dir=path/to/test_dir,
-                             transform=some_transform,
+                             train_transform=some_transform,
+                             test_transform=some_transform,
                              batch_size=32,
                              num_workers=4)
   """
   # Use ImageFolder to create datasets
-  train_data = datasets.ImageFolder(train_dir, transform=transform)
-  test_data = datasets.ImageFolder(test_dir, transform=transform) # currently the same transform is performed ob train and test data
+  train_data = datasets.ImageFolder(train_dir, transform=train_transform)
+  test_data = datasets.ImageFolder(test_dir, transform=test_transform)
 
   # Get class names
   class_names = train_data.classes
@@ -136,14 +196,15 @@ def create_dataloaders(
       batch_size=batch_size,
       shuffle=True,
       num_workers=num_workers,
-      pin_memory=True,
+      pin_memory=True
   )
   test_dataloader = DataLoader(
       test_data,
       batch_size=batch_size,
       shuffle=False, # don't need to shuffle test data
       num_workers=num_workers,
-      pin_memory=True,
+      pin_memory=True
   )
 
   return train_dataloader, test_dataloader, class_names
+
