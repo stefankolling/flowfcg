@@ -131,7 +131,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
   train_size = int(train_ratio * dataset_size)
   test_size = dataset_size - train_size
   train_data, test_data = random_split(dataset, [train_size, test_size])
-  print(f"train ratio: {train_ratio}, dataset: {dataset_size}, train_data: {train_size}, test_data: {test_size}")
+  print(f"Dataset split in train ratio of {train_ratio}: {dataset_size} samples in total divided in {train_size} training samples and {test_size} test samples")
 
   # Apply different transforms to each subdataset
   train_data, test_data = MyDataset(train_data, transform=train_transform), MyDataset(test_data, transform=test_transform)
@@ -145,7 +145,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
       pin_memory=True,
   )
   test_dataloader = DataLoader(
-      dataset=train_data,
+      dataset=test_data,
       batch_size=batch_size,
       shuffle=False, # No need to shuffle test data
       num_workers=num_workers,
