@@ -138,7 +138,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
       dataset=train_data,
       batch_size=batch_size,
       shuffle=True,
-      num_workers=num_workers
+      num_workers=num_workers,
       pin_memory=True,
   )
   test_dataloader = DataLoader(
