@@ -134,7 +134,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
   train_data, test_data = MyDataset(train_data, transform=train_transform), MyDataset(test_data, transform=test_transform)
 
   # Turn images into data loaders
-  train_dataloader = create_dataloaders_from_dataset(
+  train_dataloader = DataLoader(
       dataset=train_data,
       batch_size=batch_size,
       shuffle=True,
@@ -151,7 +151,7 @@ def train_test_split_create_dataloaders(dataset_path: str,
 
   return train_dataloader, test_dataloader, class_names
   
-def create_dataloaders_from_directories(
+def create_dataloaders_from_directory(
     train_dir: str,
     test_dir: str,
     train_transform: transforms.Compose,
